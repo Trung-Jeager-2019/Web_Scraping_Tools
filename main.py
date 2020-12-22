@@ -66,11 +66,11 @@ for menu_item in code_menu_item:
         
         cursor = connect.cursor()
 
-        # cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_menuitem (name, price, image, active, user_id, describe) 
-        # VALUES (?,?,?,?,?,?,?)""", data.get('product_title'), price, link_image, True, 2, data.get('product_description')) 
+        cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_menuitem (name, price, image, active, user_id, describe, category) 
+        VALUES (?,?,?,?,?,?,?)""", data.get('product_title'), price, link_image, True, 2, data.get('product_description'), code_item_menu) 
 
-        cursor.execute(""" UPDATE {}  SET {} = '{}' where {} = '{}' """.format(
-            "Menu_Dien_Tu_App_menuitem", "category", code_item_menu, "image", link_image))
+        # cursor.execute(""" UPDATE {}  SET {} = '{}' where {} = '{}' """.format(
+        #     "Menu_Dien_Tu_App_menuitem", "category", code_item_menu, "image", link_image))
 
         connect.commit()
 

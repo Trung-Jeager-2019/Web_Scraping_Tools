@@ -28,6 +28,13 @@ for menu_item in code_menu_item:
     code_item_menu = menu_item
     print(code_item_menu + " - " + name_item_menu)
 
+    cursor = connect.cursor()
+
+    cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_category (category_code, category_name) 
+    VALUES (?,?)""", code_item_menu, name_item_menu) 
+
+    connect.commit()
+
     links = id_menu_item.find_elements_by_css_selector("a")
 
     list_unique_product = Check_Link_Product(links)
@@ -59,8 +66,11 @@ for menu_item in code_menu_item:
         
         cursor = connect.cursor()
 
-        cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_menuitem (name, price, image, active, user_id, describe) 
-        VALUES (?,?,?,?,?,?)""", data.get('product_title'), price, link_image, True, 2, data.get('product_description')) 
+        # cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_menuitem (name, price, image, active, user_id, describe) 
+        # VALUES (?,?,?,?,?,?,?)""", data.get('product_title'), price, link_image, True, 2, data.get('product_description')) 
+
+        cursor.execute(""" UPDATE {}  SET {} = '{}' where {} = '{}' """.format(
+            "Menu_Dien_Tu_App_menuitem", "category", code_item_menu, "image", link_image))
 
         connect.commit()
 

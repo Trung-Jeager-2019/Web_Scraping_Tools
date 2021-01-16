@@ -1,27 +1,10 @@
 from selenium import webdriver
-from product import *
-import pyodbc
 import requests
+from unidecode import unidecode
 
-
-# connect = pyodbc.connect('Driver={sql server};'
-#                             'Server=DESKTOP-AJ7H4HH\MSSQLSERVER2019;'
-#                             'Database=restaurant_db;'
-#                             'Trusted_Connection=yes;')
-# connect = mysql.connector.connect(
-#   host="SherwinTrung.mysql.pythonanywhere-services.com",
-#   database="SherwinTrung$restaurant_db",
-#   user="SherwinTrung",
-#   password="Trung14121999#"
-# )
-
-server = 'e-menu.database.windows.net'
-database = 'e-menu'
-username = 'admin_db'
-password = 'TrungHieu#'   
-driver = '{ODBC Driver 17 for SQL Server}'
-
-connect = pyodbc.connect('DRIVER='+driver+';SERVER='+server+';PORT=1433;DATABASE='+database+';UID='+username+';PWD='+ password)
+from product import Check_Link_Product, Get_Data_Product
+from upload_image import url_image_firebase
+from api_post import response_data
 
 # ------------------------------------------------------------------------------------------------------
 PATH = "D:\Downloads\Software Files\chromedriver_win32\chromedriver.exe"
@@ -39,56 +22,74 @@ for menu_item in code_menu_item:
 
     # Tên danh mục
     name_item_menu = id_menu_item.find_element_by_class_name("line_after_heading").text
+
     # Mã danh mục
     code_item_menu = menu_item
     print(code_item_menu + " - " + name_item_menu)
-
-    cursor = connect.cursor()
-
-    cursor.execute(""" INSERT INTO Menu_Dien_Tu_App_category (category_code, category_name) 
-    VALUES (?,?)""", code_item_menu, name_item_menu) 
-
-    connect.commit()
 
     links = id_menu_item.find_elements_by_css_selector("a")
 
     list_unique_product = Check_Link_Product(links)
 
-    # print([product_link for product_link in list_unique_product])
-
+    # Sản phẩm thuộc theo danh mục
     for product_link in list_unique_product:
         
         print(product_link)
         data = Get_Data_Product(product_link, driver)
         # Tên sản phẩm
         print(data.get('product_title'))
-        # Mô tả sản phẩm
-        print(data.get('product_description'))
         # Giá cả sản phẩm
         print(data.get('product_price'))
         # Hình ảnh sản phẩm
         print(data.get('product_image'))
+        # Mô tả sản phẩm
+        print(data.get('product_description'))
 
-        name_image = product_link.split("/", 4)[-1] + ".jpg"
+        category_name = data.get('product_title')
+        category_list = category_name.split()
+        sub_str = ''
+        for item in category_list:
+            if item.isalnum():
+                lower_item = unidecode(item.lower()) + "-"
+                print(lower_item)
+                sub_str += lower_item
+        category_code = sub_str.rsplit('-', 1)[0]
+        print(category_code)
+        name_image = category_code + ".jpg"
 
-        # r = requests.get(data.get('product_image'))
-        # with open("D:/Documents/Study_in_University/Four_year/Database_management_system/Project/He_thong_Menu_Dien_Tu/media/upload/" + name_image, "wb") as f:
-        #     f.write(r.content)
+        # Lưu ảnh về Local
+        r = requests.get(data.get('product_image'))
+        with open("./upload/" + name_image, "wb") as f:
+            f.write(r.content)
 
-        link_image = "upload/" + name_image
+        # Link ảnh ở local
+        link_image_local = "upload/" + name_image
         
+        # Tên sản phẩm
+        name = data.get('product_title')
+
+        # Link ảnh ở public - Đẩy ảnh lên Firebase
+        link_image_public = url_image_firebase(link_image_local)
+
+        # Giá cả sản phẩm
         price = data.get('product_price').split(",", 1)[0] + "000"
         
-        # cursor = connect.cursor()
-
-        # cursor.execute("""INSERT INTO Menu_Dien_Tu_App_menuitem (name, price, image, active, user_id, describe, category) 
-        # VALUES (?,?,?,?,?,?,?)""", data.get('product_title'), price, link_image, True, 2, data.get('product_description'), code_item_menu) 
-
-        # # cursor.execute(""" UPDATE {}  SET {} = '{}' where {} = '{}' """.format(
-        # #     "Menu_Dien_Tu_App_menuitem", "category", code_item_menu, "image", link_image))
-
-        # connect.commit()
+        # Mô tả sản phẩm
+        decribe = data.get('product_description')
+        
+        url = "http://127.0.0.1:8000/"
+        payload = {
+            'category': name_item_menu,
+            'name': name,
+            'price': price,
+            'image': link_image_public,
+            'decribe': decribe
+        }
+        files = []
+        headers = {}
+        # Đẩy dữ liệu về api - Post
+        response_data(url, payload, files, headers)
 
     driver.close()
 
-driver.quit()
+    driver.quit()
